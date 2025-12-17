@@ -1,0 +1,1 @@
+<a href="{{ $href ?? '#' }}" class="text-sm md:text-base">{{ $label }}</a>

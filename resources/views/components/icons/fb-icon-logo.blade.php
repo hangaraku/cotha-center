@@ -1,0 +1,1 @@
+<img src="{{ asset('images/f_logo_RGB-White_144.png') }}" alt="">

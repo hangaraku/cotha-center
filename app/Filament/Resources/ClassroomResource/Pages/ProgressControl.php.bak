@@ -1,0 +1,215 @@
+<?php
+
+namespace App\Filament\Resources\ClassroomResource\Pages;
+
+use App\Filament\Resources\ClassroomResource;
+use App\Models\Classroom;
+use App\Models\Module;
+use App\Models\UserUnit;
+use Filament\Resources\Pages\Page;
+use Filament\Tables\Table;
+use Filament\Tables;
+use Illuminate\Support\Collection;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+
+class ProgressControl extends Page
+{
+    protected static string $resource = ClassroomResource::class;
+    public Classroom $classroom;
+    public Collection $modules;
+    public ?Module $selectedModule = null;
+    public bool $showAllModules = false;
+    public array $studentProgress = [];
+    public ?int $selectedModuleId = null;
+
+    public function mount(Classroom $classroom, Request $request)
+    {
+        try {
+            $this->classroom = $classroom;
+            
+            // Get all modules for this classroom
+            $this->modules = $this->classroom->projects()->orderBy('modules.order_number')->get();
+            
+            // Debug: Log the modules found
+            Log::info('Modules found for classroom ' . $classroom->id . ': ' . $this->modules->count());
+            
+            // Check if we should show all modules
+            $this->showAllModules = $request->has('all') || $request->get('all') === 'true';
+            
+            if ($this->showAllModules) {
+                // Show all modules
+                $this->selectedModule = null;
+                Log::info('Showing all modules');
+            } else {
+                // Show specific module(s)
+                $moduleIds = $request->get('modules');
+                $singleModuleId = $request->get('module');
+                
+                Log::info('Module request - moduleIds: ' . $moduleIds . ', singleModuleId: ' . $singleModuleId);
+                
+                if ($moduleIds) {
+                    // Multiple modules specified
+                    $moduleIds = explode(',', $moduleIds);
+                    $this->modules = $this->modules->whereIn('modules.id', $moduleIds);
+                    $this->selectedModule = $this->modules->first();
+                } elseif ($singleModuleId) {
+                    // Single module specified
+                    $this->selectedModule = $this->modules->where('modules.id', $singleModuleId)->first();
+                    Log::info('Selected module: ' . ($this->selectedModule ? $this->selectedModule->name : 'Not found'));
+                } else {
+                    // Default to first module
+                    $this->selectedModule = $this->modules->first();
+                    Log::info('Default module: ' . ($this->selectedModule ? $this->selectedModule->name : 'Not found'));
+                }
+            }
+            $this->loadStudentProgress();
+            
+        } catch (\Exception $e) {
+            dd('mount', $e->getMessage(), $e->getTraceAsString());
+            Log::error('Error in ProgressControl mount: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            throw $e;
+        }
+    }
+
+    protected function loadStudentProgress()
+    {
+        try {
+            $this->studentProgress = [];
+            
+            $modulesToProcess = $this->showAllModules ? $this->modules : collect([$this->selectedModule]);
+            
+            foreach ($modulesToProcess as $module) {
+                if (!$module) continue;
+                // Add dd for debugging: dump only module units
+                dd([
+                    'module_units' => $module->units,
+                ]);
+                $this->studentProgress[$module->id] = [];
+                
+                foreach ($this->classroom->students as $student) {
+                    $this->studentProgress[$module->id][$student->user_id] = [];
+                    
+                    foreach ($module->units as $unit) {
+                        $hasAccess = UserUnit::where('user_id', $student->user_id)
+                            ->where('unit_id', $unit->id)
+                            ->exists();
+                        
+                        $this->studentProgress[$module->id][$student->user_id][$unit->id] = $hasAccess;
+                    }
+                }
+            }
+            
+            Log::info('Student progress loaded successfully');
+            
+        } catch (\Exception $e) {
+            Log::error('Error in loadStudentProgress: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            throw $e;
+        }
+    }
+
+    public function toggleUnitAccess($moduleId, $studentId, $unitId)
+    {
+        try {
+            $hasAccess = UserUnit::where('user_id', $studentId)
+                ->where('unit_id', $unitId)
+                ->exists();
+        
+            if ($hasAccess) {
+                // Remove access
+                UserUnit::where('user_id', $studentId)
+                    ->where('unit_id', $unitId)
+                    ->delete();
+                $this->studentProgress[$moduleId][$studentId][$unitId] = false;
+            } else {
+                // Grant access
+                UserUnit::create([
+                    'user_id' => $studentId,
+                    'unit_id' => $unitId,
+                ]);
+                $this->studentProgress[$moduleId][$studentId][$unitId] = true;
+            }
+            
+            $this->dispatch('unit-access-toggled');
+        } catch (\Exception $e) {
+            dd('toggleUnitAccess', $e->getMessage(), $e->getTraceAsString());
+        }
+    }
+
+    public function selectModule($moduleId)
+    {
+        try {
+            $this->selectedModuleId = $moduleId;
+            $this->selectedModule = $this->modules->where('modules.id', $moduleId)->first();
+            $this->loadStudentProgress();
+            
+            // Update URL - combine the URL with query string correctly
+            $url = ClassroomResource::getUrl('progress', ['classroom' => $this->classroom]);
+            $urlWithParams = $url . '?module=' . $moduleId;  // Append the module query string
+            $this->redirect($urlWithParams);
+        } catch (\Exception $e) {
+            dd('selectModule', $e->getMessage(), $e->getTraceAsString());
+        }
+    }
+
+    public function toggleShowAllModules()
+    {
+        try {
+            $this->showAllModules = !$this->showAllModules;
+            $this->loadStudentProgress();
+            
+            // Update URL - combine the URL with query string correctly
+            $url = ClassroomResource::getUrl('progress', ['classroom' => $this->classroom]);
+            if ($this->showAllModules) {
+                $url .= '?all=true';  // Add the 'all' query parameter if showing all modules
+            }
+            $this->redirect($url);
+        } catch (\Exception $e) {
+            dd('toggleShowAllModules', $e->getMessage(), $e->getTraceAsString());
+        }
+    }
+
+    public function updatedSelectedModuleId($value)
+    {
+        try {
+            if ($value) {
+                $this->selectedModule = $this->modules->where('modules.id', $value)->first();
+                $this->loadStudentProgress();
+            }
+        } catch (\Exception $e) {
+            dd('updatedSelectedModuleId', $e->getMessage(), $e->getTraceAsString());
+        }
+    }
+
+    public function updatedShowAllModules($value)
+    {
+        try {
+            $this->loadStudentProgress();
+        } catch (\Exception $e) {
+            dd('updatedShowAllModules', $e->getMessage(), $e->getTraceAsString());
+        }
+    }
+
+    public function getBreadcrumbs(): array
+    {
+        try {
+            $breadcrumbs = [
+                ClassroomResource::getUrl('edit', ['record' => $this->classroom]) => $this->classroom->name,
+            ];
+            
+            if ($this->showAllModules) {
+                $breadcrumbs['#'] = 'Student Progress: All Modules';
+            } else {
+                $breadcrumbs['#'] = 'Student Progress: ' . ($this->selectedModule ? $this->selectedModule->name : 'Module');
+            }
+            
+            return $breadcrumbs;
+        } catch (\Exception $e) {
+            dd('getBreadcrumbs', $e->getMessage(), $e->getTraceAsString());
+        }
+    }
+
+    protected static string $view = 'filament.resources.classroom-resource.pages.progress-control';
+}

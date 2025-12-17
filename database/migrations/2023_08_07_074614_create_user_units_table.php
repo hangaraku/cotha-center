@@ -1,0 +1,27 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+class CreateUserUnitsTable extends Migration
+{
+    public function up()
+    {
+        Schema::create('user_units', function (Blueprint $table) {
+
+            $table->id();
+            $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger('unit_id');
+            $table->foreign('user_id')->references('id')->on('users');
+            $table->foreign('unit_id')->references('id')->on('units');
+            $table->timestamps();
+        
+        });
+    }
+
+    public function down()
+    {
+        Schema::dropIfExists('user_units');
+    }
+}

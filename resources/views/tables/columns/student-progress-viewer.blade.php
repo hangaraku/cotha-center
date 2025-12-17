@@ -1,0 +1,4 @@
+<div>
+    {{ $getRecord()->name }}
+    {{}}
+</div>
