@@ -78,6 +78,9 @@
                                 @if($student->user->profile_picture)
                                     <img src="{{ asset('uploads/' . $student->user->profile_picture) }}" 
                                          alt="{{ $student->user->name }}"
+                                         loading="lazy"
+                                         width="80"
+                                         height="80"
                                          class="w-20 h-20 rounded-full object-cover mx-auto mb-4 border-2 border-gray-200">
                                 @else
                                     <div class="w-20 h-20 bg-gradient-to-r from-pink-400 to-purple-500 rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">
@@ -140,7 +143,10 @@
                             @if($project->thumbnail)
                                 <img src="{{ asset('uploads/' . $project->thumbnail) }}" 
                                      alt="{{ $project->title }}"
-                                     class="w-full h-48 object-cover">
+                                     loading="lazy"
+                                     width="400"
+                                     height="300"
+                                     class="w-full h-48 object-cover lazy-image">
                             @else
                                 <div class="w-full h-48 bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
                                     <div class="text-center text-white">
@@ -178,6 +184,9 @@
                                 @if($project->user->profile_picture)
                                     <img src="{{ asset('uploads/' . $project->user->profile_picture) }}" 
                                          alt="{{ $project->user->name }}"
+                                         loading="lazy"
+                                         width="32"
+                                         height="32"
                                          class="w-8 h-8 rounded-full object-cover">
                                 @else
                                     <div class="w-8 h-8 bg-gradient-to-r from-pink-400 to-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold">
@@ -278,6 +287,20 @@
 <script>
 // CSRF token for AJAX requests
 const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+// Lazy loading enhancement - remove shimmer when images are loaded
+document.addEventListener('DOMContentLoaded', function() {
+    const lazyImages = document.querySelectorAll('img[loading="lazy"]');
+    lazyImages.forEach(img => {
+        if (img.complete) {
+            img.classList.add('loaded');
+        } else {
+            img.addEventListener('load', function() {
+                this.classList.add('loaded');
+            });
+        }
+    });
+});
 
 // Section switching functionality
 function showSection(section) {
@@ -471,6 +494,27 @@ function incrementView(projectId) {
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
+}
+
+/* Lazy loading styles */
+img[loading="lazy"] {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+img[loading="lazy"].loaded {
+    animation: none;
+    background: none;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
 }
 </style>
 @endsection

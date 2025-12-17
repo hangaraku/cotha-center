@@ -13,6 +13,9 @@
                 @if($user->profile_picture)
                     <img src="{{ asset('uploads/' . $user->profile_picture) }}" 
                          alt="{{ $user->name }}"
+                         loading="lazy"
+                         width="80"
+                         height="80"
                          class="w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg">
                 @else
                     <div class="w-20 h-20 bg-gradient-to-r from-pink-400 to-purple-500 rounded-full flex items-center justify-center text-white text-2xl font-bold">
@@ -136,6 +139,9 @@
                             @if($project->thumbnail)
                                 <img src="{{ asset('uploads/' . $project->thumbnail) }}" 
                                      alt="{{ $project->title }}"
+                                     loading="lazy"
+                                     width="400"
+                                     height="300"
                                      class="w-full h-48 object-cover">
                             @else
                                 <div class="w-full h-48 bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center">
