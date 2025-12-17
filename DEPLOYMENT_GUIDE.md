@@ -17,8 +17,12 @@ The CI/CD pipeline will automatically:
 
 1. GitHub repository set up
 2. SSH access to your remote server
-3. Composer and Node.js installed on the server
-4. Laravel application properly configured on server
+3. **PHP 8.3 or higher** installed on the server (required!)
+4. Composer and Node.js installed on the server
+5. Laravel application properly configured on server
+
+> **Important:** This project requires PHP 8.3+. Check your server PHP version with `php -v`.
+> If you need to upgrade, see `PHP_VERSION_FIX.md`.
 
 ## 🔧 Setup Instructions
 
@@ -89,6 +93,9 @@ SSH into your server and ensure everything is ready:
 ```bash
 # Connect to your server
 ssh root@your-server-ip
+
+# Check PHP version (MUST be 8.3 or higher)
+php -v
 
 # Navigate to project directory
 cd /home/comfypace/htdocs/comfypace.com

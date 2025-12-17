@@ -18,7 +18,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
+          php-version: '8.3'
           extensions: mbstring, xml, ctype, iconv, intl, pdo_sqlite, mysql, gd
           coverage: none
           
@@ -28,19 +28,17 @@ jobs:
           node-version: '20'
           cache: 'npm'
           
-      - name: Install Composer dependencies
-        run: composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction
-        
       - name: Install NPM dependencies
         run: npm ci
-        
+          
       - name: Build assets
         run: npm run build
-        
+          
       - name: Create deployment archive
         run: |
           mkdir -p deployment
           rsync -av --exclude='node_modules' \
+                    --exclude='vendor' \
                     --exclude='.git' \
                     --exclude='.github' \
                     --exclude='deployment' \
@@ -65,6 +63,11 @@ jobs:
             
             # Navigate to project directory
             cd /home/comfypace/htdocs/comfypace.com
+            
+            # Check PHP version
+            echo "Checking PHP version..."
+            PHP_VERSION=$(php -r "echo PHP_VERSION;")
+            echo "Server PHP version: $PHP_VERSION"
             
             # Create backup
             echo "Creating backup..."

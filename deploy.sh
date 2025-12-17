@@ -37,6 +37,20 @@ cd "$PROJECT_DIR" || exit 1
 
 print_status "Starting deployment process..."
 
+# Check PHP version
+print_status "Checking PHP version..."
+PHP_VERSION=$(php -r "echo PHP_VERSION;")
+print_status "Server PHP version: $PHP_VERSION"
+
+# Check if PHP version is compatible (requires 8.3+)
+PHP_MAJOR=$(php -r "echo PHP_MAJOR_VERSION;")
+PHP_MINOR=$(php -r "echo PHP_MINOR_VERSION;")
+if [ "$PHP_MAJOR" -lt 8 ] || ([ "$PHP_MAJOR" -eq 8 ] && [ "$PHP_MINOR" -lt 3 ]); then
+    print_error "PHP 8.3 or higher is required. Current version: $PHP_VERSION"
+    print_warning "Please upgrade PHP on your server."
+    exit 1
+fi
+
 # Create backup
 print_status "Creating backup..."
 BACKUP_FILE="$BACKUP_DIR/backup-$(date +%Y%m%d-%H%M%S).tar.gz"

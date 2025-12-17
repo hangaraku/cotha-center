@@ -1,5 +1,18 @@
 # Quick CI/CD Setup Reference
 
+## ⚠️ Important: PHP Version Requirement
+
+**Your server MUST have PHP 8.3 or higher installed!**
+
+Check server PHP version:
+```bash
+ssh root@your-server "php -v"
+```
+
+If PHP < 8.3, see `PHP_VERSION_FIX.md` for upgrade instructions.
+
+---
+
 ## 🚀 Quick Start (5 minutes)
 
 ### 1. Run Setup Script
